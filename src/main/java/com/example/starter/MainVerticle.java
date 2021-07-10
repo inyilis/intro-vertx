@@ -1,7 +1,14 @@
 package com.example.starter;
 
 import com.example.starter.util.Runner;
+import io.vertx.config.ConfigRetriever;
+import io.vertx.config.ConfigRetrieverOptions;
+import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.Promise;
+import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -13,21 +20,37 @@ public class MainVerticle extends AbstractVerticle {
   }
 
   @Override
-  public void start() {
+  public void start(Promise<Void> start) {
     vertx.deployVerticle(new HelloVerticle());
     Router router = Router.router(vertx);
 
     router.get("/api/v1/hello").handler(this::helloVertx);
     router.get("/api/v1/hello/:name").handler(this::helloName);
 
-    int httpPort;
-    try {
-      httpPort = Integer.parseInt(System.getProperty("http.port", "8888"));
-    } catch (NumberFormatException nfe) {
-      httpPort = 8888;
-    }
+    ConfigStoreOptions defaultConfig = new ConfigStoreOptions()
+      .setType("file")
+      .setFormat("json")
+      .setConfig(new JsonObject().put("path", "config.json"));
 
-    vertx.createHttpServer().requestHandler(router).listen(httpPort);
+    ConfigRetrieverOptions opts = new ConfigRetrieverOptions()
+      .addStore(defaultConfig);
+
+    ConfigRetriever configRetriever = ConfigRetriever.create(vertx, opts);
+
+    Handler<AsyncResult<JsonObject>> handler = asyncResult -> this.handleConfigResult(start, router, asyncResult);
+    configRetriever.getConfig(handler);
+  }
+
+  void handleConfigResult(Promise<Void> start, Router router, AsyncResult<JsonObject> asyncResult) {
+    if (asyncResult.succeeded()) {
+      JsonObject config = asyncResult.result();
+      JsonObject http = config.getJsonObject("http");
+      int httpPort = http.getInteger("port");
+      vertx.createHttpServer().requestHandler(router).listen(httpPort);
+      start.complete();
+    } else {
+      start.fail("Unable to load configuration");
+    }
   }
 
   void helloVertx(RoutingContext routingContext) {
