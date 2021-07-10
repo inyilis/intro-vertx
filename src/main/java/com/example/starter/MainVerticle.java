@@ -1,10 +1,16 @@
 package com.example.starter;
 
+import com.example.starter.util.Runner;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
 public class MainVerticle extends AbstractVerticle {
+
+  // Convenience method so you can run it in your IDE
+  public static void main(String[] args) {
+    Runner.runExample(MainVerticle.class);
+  }
 
   @Override
   public void start() {
