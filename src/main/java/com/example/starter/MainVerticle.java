@@ -11,6 +11,7 @@ import io.vertx.core.Promise;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.StaticHandler;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -24,9 +25,22 @@ public class MainVerticle extends AbstractVerticle {
     vertx.deployVerticle(new HelloVerticle());
     Router router = Router.router(vertx);
 
+    router.route().handler(ctx -> {
+      String authToken = ctx.request().getHeader("AUTH_TOKEN");
+      if (authToken != null && "mySuperSecretAuthToken".contentEquals(authToken)) {
+        ctx.next();
+      } else {
+        ctx.response().setStatusCode(401).setStatusMessage("Unauthorized").end("Token wrong");
+      }
+    });
     router.get("/api/v1/hello").handler(this::helloVertx);
     router.get("/api/v1/hello/:name").handler(this::helloName);
+    router.route().handler(StaticHandler.create("web").setIndexPage("index.html"));
 
+    doConfig(start, router);
+  }
+
+  void doConfig(Promise<Void> start, Router router) {
     ConfigStoreOptions defaultConfig = new ConfigStoreOptions()
       .setType("file")
       .setFormat("json")
