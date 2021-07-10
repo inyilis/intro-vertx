@@ -22,9 +22,7 @@ public class MainVerticle extends AbstractVerticle {
 
   @Override
   public void start(Promise<Void> start) {
-//    vertx.deployVerticle(new HelloVerticle());
-    vertx.deployVerticle("Hello.groovy");
-    vertx.deployVerticle("Hello.js");
+    vertx.deployVerticle(new HelloVerticle());
 
     Router router = Router.router(vertx);
 
@@ -41,8 +39,13 @@ public class MainVerticle extends AbstractVerticle {
       .setFormat("json")
       .setConfig(new JsonObject().put("path", "config.json"));
 
+    ConfigStoreOptions cliConfig = new ConfigStoreOptions()
+      .setType("json")
+      .setConfig(config());
+
     ConfigRetrieverOptions opts = new ConfigRetrieverOptions()
-      .addStore(defaultConfig);
+      .addStore(defaultConfig)
+      .addStore(cliConfig);
 
     ConfigRetriever configRetriever = ConfigRetriever.create(vertx, opts);
 
