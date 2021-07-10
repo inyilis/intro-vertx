@@ -1,6 +1,7 @@
 package com.example.starter;
 
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.DeploymentOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 
@@ -8,7 +9,10 @@ public class MainVerticle extends AbstractVerticle {
 
   @Override
   public void start() {
-    vertx.deployVerticle(new HelloVerticle());
+    DeploymentOptions options = new DeploymentOptions()
+      .setWorker(true)
+      .setInstances(8);
+    vertx.deployVerticle("com.example.starter.HelloVerticle", options);
     Router router = Router.router(vertx);
 
     router.get("/api/v1/hello").handler(this::helloVertx);
